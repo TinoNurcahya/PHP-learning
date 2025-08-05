@@ -1,0 +1,21 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  outline: none;
+  border: none;
+  text-decoration: none;
+}
+
+body {
+  background-image: url("background.jpg");
+  background-size: cover;
+}
+
+h2 {
+  text-align: center;
+  color: white;
+}
+th {
+  text-align: center;
+}
