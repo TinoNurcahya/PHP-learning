@@ -8,11 +8,13 @@
 }
 
 body {
-  background-image: url("background.jpg");
+  height: 100dvh;
+  background-image: url("img/background.jpg");
   background-size: cover;
+  background-repeat: no-repeat;
 }
 
-h2 {
+h1 {
   text-align: center;
   color: white;
 }
