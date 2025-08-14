@@ -49,3 +49,23 @@ $stmt->close();
 <?php else: ?>
   <p>Data tidak ditemukan.</p>
 <?php endif; ?>
+
+========== $_SERVER["REQUEST_METHOD"] == "POST"
+Kapan benar : Saat request pakai POST (form, API, dsb)
+Kelebihan : Tidak tergantung nama tombol submit
+Kekurangan: Akan true walaupun POST datang dari tempat lain (bukan form yang dimaksud)
+
+========== isset($_POST['submit'])
+Kapan benar : Saat tombol submit dengan name=submit diklik
+Kelebihan : Lebih spesifik ke tombol tertentu
+Kekurangan: Kalau tombol submit tidak punya name, tidak akan bekerja
+
+========== trim() dan real_escape_string
+Kalau pakai Prepared Statement ($stmt->bind_param()), kamu tidak perlu real_escape_string() karena binding parameter sudah aman.
+Biasanya:
+
+Gunakan trim() untuk membersihkan input teks.
+
+Gunakan password_hash() untuk password.
+
+Gunakan Prepared Statement untuk query agar tidak perlu escape manual.
