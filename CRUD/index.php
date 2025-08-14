@@ -1,45 +1,76 @@
-<?php include "connect.php";
+<?php
+session_start();
+include "connect.php";
+
+$current_file = basename($_SERVER['PHP_SELF']);
+$public_pages = ['login.php', 'registrasi.php'];
+
+// Cek login untuk halaman selain public
+if (!in_array($current_file, $public_pages)) {
+  if (!isset($_SESSION["username"]) || !isset($_SESSION["id"])) {
+    session_destroy();
+    header("Location: login.php");
+    exit();
+  }
+}
+
 
 if (isset($_POST['submit'])) {
   $nama = $koneksi->real_escape_string($_POST['nama']);
   $kategori = $koneksi->real_escape_string($_POST['kategori']);
   $jumlah = $koneksi->real_escape_string($_POST['jumlah']);
   $lokasi = $koneksi->real_escape_string($_POST['lokasi']);
-  $koneksi->query("INSERT INTO inventaris (nama, kategori, jumlah, lokasi) VALUES ('$nama', '$kategori', '$jumlah', '$lokasi')");
-  header("Location: index.php");
-}
 
+  // default jika tidak ada gambar
+  $nama_file_baru = "default.jpg";
 
-if (isset($_GET['hapus'])) {
-  $id = intval($_GET['hapus']);
-  if ($id > 0) {
-    $cek = $koneksi->query("SELECT id FROM inventaris WHERE id = $id");
+  if (!empty($_FILES['gambar']['name'])) {
+    $allowed_types = ['image/jpeg', 'image/png', 'image/jpg'];
+    $file_type = $_FILES['gambar']['type'];
+    $file_size = $_FILES['gambar']['size'];
 
-    if ($cek->num_rows > 0) {
-      // Jika data ditemukan, lakukan hapus
-      $koneksi->query("DELETE FROM inventaris WHERE id = $id");
-
-      echo "<script>
-              alert('Data berhasil dihapus.');
-              window.location.href = 'index.php';
-            </script>";
-    } else {
-      // Jika tidak ditemukan, beri peringatan
-      echo "<script>
-              alert('Data tidak ditemukan.');
-              window.location.href = 'index.php';
-            </script>";
+    if (!in_array($file_type, $allowed_types)) {
+      echo "<script>alert('File harus berupa JPG atau PNG.'); window.location.href='index.php';</script>";
+      exit;
     }
-  } else {
-    // Jika ID tidak valid
-    echo "<script>
-            alert('ID tidak valid!');
-            window.location.href = 'index.php';
-          </script>";
+
+    if ($file_size > 2 * 1024 * 1024) {
+      echo "<script>alert('Ukuran file maksimal 2MB.'); window.location.href='index.php';</script>";
+      exit;
+    }
+
+    $nama_file_baru = uniqid() . '_' . basename($_FILES['gambar']['name']);
+    $lokasi_simpan = "img/" . $nama_file_baru;
+
+    // simpan ke folder
+    if (!move_uploaded_file($_FILES['gambar']['tmp_name'], $lokasi_simpan)) {
+      die("Gagal mengupload foto.");
+    }
   }
+
+  // Query insert tunggal, dengan atau tanpa gambar
+  $query = "INSERT INTO inventaris (nama, kategori, jumlah, lokasi, gambar) 
+            VALUES ('$nama', '$kategori', '$jumlah', '$lokasi', '$nama_file_baru')";
+  $koneksi->query($query);
+
+  header("Location: index.php");
+  exit;
 }
-$data = $koneksi->query("SELECT * FROM inventaris");
+
+// pencarian
+$keyword = isset($_GET['keyword']) ? trim($_GET['keyword']) : '';
+if (!empty($keyword)) {
+  $safe_keyword = $koneksi->real_escape_string($keyword);
+  $data = $koneksi->query("SELECT * FROM inventaris WHERE 
+                          nama LIKE '%$safe_keyword%' OR 
+                          kategori LIKE '%$safe_keyword%' OR 
+                          jumlah LIKE '%$safe_keyword%' OR 
+                          lokasi LIKE '%$safe_keyword%'");
+} else {
+  $data = $koneksi->query("SELECT * FROM inventaris ORDER BY waktu DESC");
+}
 ?>
+
 
 <!DOCTYPE html>
 <html lang="en">
@@ -47,80 +78,217 @@ $data = $koneksi->query("SELECT * FROM inventaris");
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-LN+7fdVzj6u52u30Kp6M/trliBMCMKTyK833zpbD+pXdCLuTusPj697FH4R/5mcr" crossorigin="anonymous">
   <script src="https://kit.fontawesome.com/c8f4e6dde8.js" crossorigin="anonymous"></script>
+  <link rel="shortcut icon" href="img/gajah.png" type="image/x-icon">
   <link rel="stylesheet" href="style.css">
   <title>Sistem Inventaris Barang Sekolah</title>
 </head>
 
 <body>
   <div class="container mt-5 mb-4">
-    <h2 class="mb-4">Sistem Inventaris Barang Sekolah</h2>
+    <h1 class="mb-4">Sistem Inventaris Barang Sekolah</h1>
 
     <!-- Form Input -->
     <div class="card mb-4">
       <div class="card-header text-center font-weight-bold">Isi Barang</div>
       <div class="card-body">
-        <form method="post">
-          <div class="mb-3">
+        <form method="post" enctype="multipart/form-data">
+          <div class="mb-3 position-relative">
             <label for="nama">Nama</label>
-            <input type="text" name="nama" class="form-control" required id="nama">
+            <input type="text" name="nama" class="form-control" required id="nama" autofocus autocomplete="off">
           </div>
           <div class="mb-3">
             <label for="kategori">Kategori</label>
-            <input type="text" name="kategori" class="form-control" id="kategori" required>
+            <input type="text" name="kategori" class="form-control" id="kategori" required autocomplete="off">
           </div>
           <div class="mb-3">
             <label for="jumlah">Jumlah</label>
-            <input type="number" name="jumlah" class="form-control" id="jumlah" min="1"></input>
+            <input type="number" name="jumlah" class="form-control" id="jumlah" min="1" required></input>
           </div>
           <div class="mb-3">
             <label for="lokasi">Lokasi</label>
-            <textarea name="lokasi" class="form-control" id="lokasi" rows="3"></textarea>
+            <textarea name="lokasi" class="form-control" id="lokasi" rows="3" required></textarea>
           </div>
-          <button type="submit" name="submit" class="btn btn-success">
+          <div class="mb-3">
+            <label for="gambar">Gambar</label>
+            <input type="file" name="gambar" class="form-control" id="gambar"></input>
+          </div>
+          <button type="submit" name="submit" class="btn btn-outline-primary">
             <i class="fas fa-paper-plane"></i> Kirim
           </button>
         </form>
       </div>
     </div>
 
+    <!-- Searching -->
+    <form action="" method="get">
+      <div class="m-5 d-flex align-items-center gap-2">
+        <input type="text" name="keyword" class="form-control" placeholder="Cari data..." autocomplete="off" value="<?= isset($_GET['keyword']) ? htmlspecialchars($_GET['keyword']) : '' ?>">
+        <button type="submit" name="cari" class="btn btn-success w-20">
+          <i class="fas fa-search"></i>
+        </button>
+        <a href="index.php" class="btn btn-info w-20">
+          <i class="fas fa-arrow-left"></i>
+        </a>
+      </div>
+    </form>
+
     <!-- Daftar Barangnya -->
     <div class="card">
       <div class="card-header text-center font-weight-bold">Daftar Inventaris Barang</div>
-      <div class="card-body table-responsive">
-        <table class="table table-bordered table-striped">
-          <thead class="table-secondary">
-            <tr>
-              <th>Nama</th>
-              <th>Kategori</th>
-              <th>Jumlah</th>
-              <th>Lokasi</th>
-              <th>Aksi</th>
-            </tr>
-          </thead>
-          <tbody>
-            <?php while ($row = $data->fetch_assoc()): ?>
+      <div class="card-body">
+        <div class="table-responsive">
+          <table class="table table-bordered table-striped ">
+            <thead class="table-secondary">
               <tr>
-                <td><?= htmlspecialchars($row['nama']) ?></td>
-                <td><?= htmlspecialchars($row['kategori']) ?></td>
-                <td><?= htmlspecialchars($row['jumlah']) ?></td>
-                <td><?= nl2br(htmlspecialchars($row['lokasi'])) ?></td>
-                <td>
-                  <a href="edit.php?id=<?= $row['id'] ?>" class="btn btn-sm btn-warning">
-                    <i class="fas fa-edit"></i>
-                  </a>
-                  <a href="?hapus=<?= $row['id'] ?>" onclick="return confirm('Yakin hapus?')" class="btn btn-sm btn-danger">
-                    <i class="fas fa-trash"></i>
-                  </a>
-                </td>
+                <th>Nama</th>
+                <th>Kategori</th>
+                <th>Jumlah</th>
+                <th>Lokasi</th>
+                <th>Gambar</th>
+                <th>Aksi</th>
               </tr>
-            <?php endwhile; ?>
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              <?php if ($data->num_rows > 0): ?>
+                <?php while ($row = $data->fetch_assoc()): ?>
+                  <tr>
+                    <td><?= htmlspecialchars($row['nama']) ?></td>
+                    <td><?= htmlspecialchars($row['kategori']) ?></td>
+                    <td><?= htmlspecialchars($row['jumlah']) ?></td>
+                    <td><?= nl2br(htmlspecialchars($row['lokasi'])) ?></td>
+                    <td><img src="img/<?= !empty($row['gambar']) ? ($row['gambar']) : 'default.jpg' ?>" alt="Foto Profil" style="height:100px;" loading="lazy" class="rounded-3"></td>
+
+                    <td>
+                      <a href="edit.php?id=<?= $row['id'] ?>" class="btn btn-sm btn-warning">
+                        <i class="fas fa-edit"></i>
+                      </a>
+                      <a href="hapus.php?hapus=<?= $row['id'] ?>" onclick="return confirm('Yakin hapus?')" class="btn btn-sm btn-danger">
+                        <i class="fas fa-trash"></i>
+                      </a>
+                    </td>
+                  </tr>
+                <?php endwhile; ?>
+              <?php else: ?>
+                <tr>
+                  <td colspan="5" class="text-center text-muted">Data tidak ditemukan.</td>
+                </tr>
+              <?php endif; ?>
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
-  </div>
+
+    <script>
+      function autocomplete(inp, arr) {
+        var currentFocus;
+
+        inp.addEventListener("input", function(e) {
+          var a, b, i, val = this.value;
+          closeAllLists();
+          if (!val) return false;
+
+          currentFocus = -1;
+          a = document.createElement("DIV");
+          a.setAttribute("id", this.id + "autocomplete-list");
+          a.classList.add("autocomplete-items", "list-group", "position-absolute", "w-100", "z-3", "mt-1");
+
+          this.parentNode.appendChild(a);
+
+          let foundMatch = false;
+
+          for (i = 0; i < arr.length; i++) {
+            if (arr[i].substr(0, val.length).toUpperCase() == val.toUpperCase()) {
+              foundMatch = true;
+              b = document.createElement("DIV");
+              b.innerHTML = "<strong>" + arr[i].substr(0, val.length) + "</strong>";
+              b.innerHTML += arr[i].substr(val.length);
+              b.classList.add("list-group-item", "list-group-item-action");
+              b.innerHTML += "<input type='hidden' value='" + arr[i] + "'>";
+              b.addEventListener("click", function(e) {
+                inp.value = this.getElementsByTagName("input")[0].value;
+                closeAllLists();
+              });
+              a.appendChild(b);
+            }
+          }
+
+          // jika tidak ada match, hilangkan container autocomplete
+          if (!foundMatch) {
+            closeAllLists();
+          }
+        });
+
+        inp.addEventListener("keydown", function(e) {
+          var x = document.getElementById(this.id + "autocomplete-list");
+          if (x) x = x.getElementsByTagName("div");
+          if (e.keyCode == 40) {
+            currentFocus++;
+            addActive(x);
+          } else if (e.keyCode == 38) {
+            currentFocus--;
+            addActive(x);
+          } else if (e.keyCode == 13) {
+            if (currentFocus > -1 && x) {
+              e.preventDefault();
+              x[currentFocus].click();
+            }
+          }
+        });
+
+        function addActive(x) {
+          if (!x) return false;
+          removeActive(x);
+          if (currentFocus >= x.length) currentFocus = 0;
+          if (currentFocus < 0) currentFocus = x.length - 1;
+          x[currentFocus].classList.add("active");
+        }
+
+        function removeActive(x) {
+          for (var i = 0; i < x.length; i++) {
+            x[i].classList.remove("active");
+          }
+        }
+
+        function closeAllLists(elmnt) {
+          var x = document.getElementsByClassName("autocomplete-items");
+          for (var i = 0; i < x.length; i++) {
+            if (elmnt != x[i] && elmnt != inp) {
+              if (x[i] && x[i].parentNode) {
+                x[i].parentNode.removeChild(x[i]);
+              }
+            }
+          }
+        }
+
+        document.addEventListener("click", function(e) {
+          closeAllLists(e.target);
+        });
+      }
+
+      var namaList = <?php
+                      $res = mysqli_query($koneksi, "SELECT DISTINCT nama FROM inventaris WHERE nama IS NOT NULL");
+                      $list = [];
+                      while ($row = mysqli_fetch_assoc($res)) {
+                        $list[] = $row['nama'];
+                      }
+                      echo json_encode($list);
+                      ?>;
+      autocomplete(document.getElementById("nama"), namaList);
+
+      var kategoriList = <?php
+                          $res = mysqli_query($koneksi, "SELECT DISTINCT kategori FROM inventaris WHERE kategori IS NOT NULL");
+                          $list = [];
+                          while ($row = mysqli_fetch_assoc($res)) {
+                            $list[] = $row['kategori'];
+                          }
+                          echo json_encode($list);
+                          ?>;
+      autocomplete(document.getElementById("kategori"), kategoriList);
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/js/bootstrap.bundle.min.js" integrity="sha384-ndDqU0Gzau9qJ1lfW4pNLlhNTkCfHzAVBReH9diLvGRem5+R9g2FzA8ZGN954O5Q" crossorigin="anonymous"></script>
 </body>
 
 </html>
