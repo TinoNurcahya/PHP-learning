@@ -1,5 +1,6 @@
 <?php
-include "connect.php";
+include "check_cookie.php";
+
 
 if (isset($_GET['hapus'])) {
   $id = intval($_GET['hapus']);
@@ -13,14 +14,13 @@ if (isset($_GET['hapus'])) {
         unlink("img/$gambar");
       }
 
-
       // Hapus dari database
       $koneksi->query("DELETE FROM inventaris WHERE id = $id");
 
       echo "<script>
-              alert('Data berhasil dihapus.');
-              window.location.href = 'index.php';
-            </script>";
+        alert('Data berhasil dihapus.');
+        setTimeout(() => { window.location.href = 'index.php'; }, 100);
+      </script>";
     } else {
       // Jika tidak ditemukan, beri peringatan
       echo "<script>
