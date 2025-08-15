@@ -69,3 +69,6 @@ Gunakan trim() untuk membersihkan input teks.
 Gunakan password_hash() untuk password.
 
 Gunakan Prepared Statement untuk query agar tidak perlu escape manual.
+
+//* ===== SESSION =====
+//* ===== COOKIE =====
