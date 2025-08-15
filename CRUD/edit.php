@@ -1,5 +1,7 @@
 <?php
-include "connect.php";
+include "check_cookie.php";
+
+
 $id = intval($_GET['id']);
 $hasil = $koneksi->query("SELECT * FROM inventaris WHERE id = $id");
 $inventaris = $hasil->fetch_assoc();
