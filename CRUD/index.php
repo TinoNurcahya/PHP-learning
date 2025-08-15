@@ -1,19 +1,5 @@
 <?php
-session_start();
-include "connect.php";
-
-$current_file = basename($_SERVER['PHP_SELF']);
-$public_pages = ['login.php', 'registrasi.php'];
-
-// Cek login untuk halaman selain public
-if (!in_array($current_file, $public_pages)) {
-  if (!isset($_SESSION["username"]) || !isset($_SESSION["id"])) {
-    session_destroy();
-    header("Location: login.php");
-    exit();
-  }
-}
-
+include "check_cookie.php";
 
 if (isset($_POST['submit'])) {
   $nama = $koneksi->real_escape_string($_POST['nama']);
@@ -79,7 +65,6 @@ if (!empty($keyword)) {
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-LN+7fdVzj6u52u30Kp6M/trliBMCMKTyK833zpbD+pXdCLuTusPj697FH4R/5mcr" crossorigin="anonymous">
-  <script src="https://kit.fontawesome.com/c8f4e6dde8.js" crossorigin="anonymous"></script>
   <link rel="shortcut icon" href="img/gajah.png" type="image/x-icon">
   <link rel="stylesheet" href="style.css">
   <title>Sistem Inventaris Barang Sekolah</title>
@@ -87,6 +72,8 @@ if (!empty($keyword)) {
 
 <body>
   <div class="container mt-5 mb-4">
+    <h3 class="mb-4 text-white">Selamat datang, <?= $_SESSION['username']; ?>👋</h3>
+    <a class="btn btn-danger text-white" href="logout.php"><i class="fa fa-sign-out px-2"></i> Logout</a>
     <h1 class="mb-4">Sistem Inventaris Barang Sekolah</h1>
 
     <!-- Form Input -->
@@ -288,6 +275,7 @@ if (!empty($keyword)) {
                           ?>;
       autocomplete(document.getElementById("kategori"), kategoriList);
     </script>
+  <script src="https://kit.fontawesome.com/c8f4e6dde8.js" crossorigin="anonymous"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/js/bootstrap.bundle.min.js" integrity="sha384-ndDqU0Gzau9qJ1lfW4pNLlhNTkCfHzAVBReH9diLvGRem5+R9g2FzA8ZGN954O5Q" crossorigin="anonymous"></script>
 </body>
 
