@@ -1,6 +1,11 @@
 <?php
 include "check_cookie.php";
 
+// ----------------- Konfigurasi Pagination -----------------
+$limit = 5;
+$page = isset($_GET['page']) && is_numeric($_GET['page']) ? (int) $_GET['page'] : 1;
+
+
 if (isset($_POST['submit'])) {
   $nama = $koneksi->real_escape_string($_POST['nama']);
   $kategori = $koneksi->real_escape_string($_POST['kategori']);
@@ -43,18 +48,35 @@ if (isset($_POST['submit'])) {
   exit;
 }
 
-// pencarian
+// ----------------- Pencarian + Pagination -----------------
 $keyword = isset($_GET['keyword']) ? trim($_GET['keyword']) : '';
 if (!empty($keyword)) {
   $safe_keyword = $koneksi->real_escape_string($keyword);
-  $data = $koneksi->query("SELECT * FROM inventaris WHERE 
-                          nama LIKE '%$safe_keyword%' OR 
-                          kategori LIKE '%$safe_keyword%' OR 
-                          jumlah LIKE '%$safe_keyword%' OR 
-                          lokasi LIKE '%$safe_keyword%'");
+  $where = "WHERE nama LIKE '%$safe_keyword%' 
+            OR kategori LIKE '%$safe_keyword%' 
+            OR jumlah LIKE '%$safe_keyword%' 
+            OR lokasi LIKE '%$safe_keyword%'";
 } else {
-  $data = $koneksi->query("SELECT * FROM inventaris ORDER BY waktu DESC");
+  $where = "";
 }
+
+// Hitung total data
+$total_result = $koneksi->query("SELECT COUNT(*) as total FROM inventaris $where");
+$total_data = $total_result->fetch_assoc()['total'];
+$total_pages = ceil($total_data / $limit);
+
+// Validasi halaman setelah tahu total pages
+if ($page < 1) {
+  $page = 1;
+} elseif ($page > $total_pages && $total_pages > 0) {
+  $page = $total_pages;
+}
+
+$offset = ($page - 1) * $limit;
+$no = $offset + 1;
+
+// Query data dengan LIMIT
+$data = $koneksi->query("SELECT * FROM inventaris $where ORDER BY waktu DESC LIMIT $limit OFFSET $offset");
 ?>
 
 
@@ -129,6 +151,7 @@ if (!empty($keyword)) {
           <table class="table table-bordered table-striped ">
             <thead class="table-secondary">
               <tr>
+                <th>No</th>
                 <th>Nama</th>
                 <th>Kategori</th>
                 <th>Jumlah</th>
@@ -141,6 +164,7 @@ if (!empty($keyword)) {
               <?php if ($data->num_rows > 0): ?>
                 <?php while ($row = $data->fetch_assoc()): ?>
                   <tr>
+                    <td><?= $no++; ?></td>
                     <td><?= htmlspecialchars($row['nama']) ?></td>
                     <td><?= htmlspecialchars($row['kategori']) ?></td>
                     <td><?= htmlspecialchars($row['jumlah']) ?></td>
@@ -159,11 +183,64 @@ if (!empty($keyword)) {
                 <?php endwhile; ?>
               <?php else: ?>
                 <tr>
-                  <td colspan="5" class="text-center text-muted">Data tidak ditemukan.</td>
+                  <td colspan="7" class="text-center text-muted">Data tidak ditemukan.</td>
                 </tr>
               <?php endif; ?>
             </tbody>
           </table>
+
+          <!-- Pagination -->
+          <?php if ($total_pages > 1): ?>
+            <nav aria-label="Page navigation example">
+              <ul class="pagination justify-content-center mt-3">
+                <!-- Tombol Previous -->
+                <li class="page-item <?= $page <= 1 ? 'disabled' : '' ?>">
+                  <a class="page-link"
+                    href="?page=<?= max(1, $page - 1) ?><?= !empty($keyword) ? '&keyword=' . urlencode($keyword) : '' ?>">
+                    <i class="fa-solid fa-angle-left"></i>
+                  </a>
+                </li>
+
+                <?php
+                $range = 1; // jumlah halaman sebelum/sesudah halaman aktif
+                $start = max(1, $page - $range);
+                $end   = min($total_pages, $page + $range);
+
+                // Halaman pertama
+                if ($start > 1) {
+                  echo '<li class="page-item"><a class="page-link" href="?page=1' . (!empty($keyword) ? '&keyword=' . urlencode($keyword) : '') . '">1</a></li>';
+                  if ($start > 2) {
+                    echo '<li class="page-item disabled"><span class="page-link">...</span></li>';
+                  }
+                }
+
+                // Halaman tengah (sekitar halaman aktif)
+                for ($i = $start; $i <= $end; $i++) {
+                  echo '<li class="page-item ' . ($i == $page ? 'active' : '') . '">
+                <a class="page-link" href="?page=' . $i . (!empty($keyword) ? '&keyword=' . urlencode($keyword) : '') . '">' . $i . '</a>
+              </li>';
+                }
+
+                // Halaman terakhir
+                if ($end < $total_pages) {
+                  if ($end < $total_pages - 1) {
+                    echo '<li class="page-item disabled"><span class="page-link">...</span></li>';
+                  }
+                  echo '<li class="page-item"><a class="page-link" href="?page=' . $total_pages . (!empty($keyword) ? '&keyword=' . urlencode($keyword) : '') . '">' . $total_pages . '</a></li>';
+                }
+                ?>
+
+                <!-- Tombol Next -->
+                <li class="page-item <?= $page >= $total_pages ? 'disabled' : '' ?>">
+                  <a class="page-link"
+                    href="?page=<?= min($total_pages, $page + 1) ?><?= !empty($keyword) ? '&keyword=' . urlencode($keyword) : '' ?>">
+                    <i class="fa-solid fa-angle-right"></i>
+                  </a>
+                </li>
+              </ul>
+            </nav>
+          <?php endif; ?>
+
         </div>
       </div>
     </div>
@@ -275,7 +352,7 @@ if (!empty($keyword)) {
                           ?>;
       autocomplete(document.getElementById("kategori"), kategoriList);
     </script>
-  <script src="https://kit.fontawesome.com/c8f4e6dde8.js" crossorigin="anonymous"></script>
+    <script src="https://kit.fontawesome.com/c8f4e6dde8.js" crossorigin="anonymous"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/js/bootstrap.bundle.min.js" integrity="sha384-ndDqU0Gzau9qJ1lfW4pNLlhNTkCfHzAVBReH9diLvGRem5+R9g2FzA8ZGN954O5Q" crossorigin="anonymous"></script>
 </body>
 
