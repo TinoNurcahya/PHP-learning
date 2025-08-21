@@ -173,10 +173,10 @@ $data = $koneksi->query("SELECT * FROM inventaris $where ORDER BY waktu DESC LIM
                       <td><img src="img/<?= !empty($row['gambar']) ? ($row['gambar']) : 'default.jpg' ?>" alt="Foto Profil" style="height:100px;" loading="lazy" class="rounded-3"></td>
 
                       <td>
-                        <a href="edit.php?id=<?= $row['id'] ?>" class="btn btn-sm btn-warning">
+                        <a href="edit.php?id=<?= $row['id'] ?>" class="btn btn-sm btn-warning m-2">
                           <i class="fas fa-edit"></i>
                         </a>
-                        <a href="hapus.php?hapus=<?= $row['id'] ?>" onclick="return confirm('Yakin hapus?')" class="btn btn-sm btn-danger">
+                        <a href="hapus.php?hapus=<?= $row['id'] ?>" onclick="return confirm('Yakin hapus?')" class="btn btn-sm btn-danger m-2">
                           <i class="fas fa-trash"></i>
                         </a>
                       </td>
