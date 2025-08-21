@@ -53,9 +53,7 @@ $keyword = isset($_GET['keyword']) ? trim($_GET['keyword']) : '';
 if (!empty($keyword)) {
   $safe_keyword = $koneksi->real_escape_string($keyword);
   $where = "WHERE nama LIKE '%$safe_keyword%' 
-            OR kategori LIKE '%$safe_keyword%' 
-            OR jumlah LIKE '%$safe_keyword%' 
-            OR lokasi LIKE '%$safe_keyword%'";
+            OR kategori LIKE '%$safe_keyword%'";
 } else {
   $where = "";
 }
@@ -95,7 +93,7 @@ $data = $koneksi->query("SELECT * FROM inventaris $where ORDER BY waktu DESC LIM
 <body>
   <div class="container mt-5 mb-4">
     <h3 class="mb-4 text-white">Selamat datang, <?= $_SESSION['username']; ?>👋</h3>
-    <a class="btn btn-danger text-white" href="logout.php"><i class="fa fa-sign-out px-2"></i> Logout</a>
+    <a class="btn btn-danger text-white my-3" href="logout.php"><i class="fa fa-sign-out px-2"></i> Logout</a>
     <h1 class="mb-4">Sistem Inventaris Barang Sekolah</h1>
 
     <!-- Form Input -->
@@ -133,9 +131,9 @@ $data = $koneksi->query("SELECT * FROM inventaris $where ORDER BY waktu DESC LIM
     <!-- Searching -->
     <form action="" method="get">
       <div class="m-5 d-flex align-items-center gap-2">
-        <input type="text" name="keyword" class="form-control" placeholder="Cari data..." autocomplete="off" value="<?= isset($_GET['keyword']) ? htmlspecialchars($_GET['keyword']) : '' ?>">
-        <button type="submit" name="cari" class="btn btn-success w-20">
-          <i class="fas fa-search"></i>
+        <input type="text" name="keyword" class="form-control" placeholder="Cari nama/kategori..(ajax)" autocomplete="off" id="keyword" value="<?= isset($_GET['keyword']) ? htmlspecialchars($_GET['keyword']) : '' ?>">
+        <button type="submit" name="cari" class="btn btn-success w-20" id="cariBtn">
+          <i class="fas fa-search" title="ini sebelum ajax (manual)"></i>
         </button>
         <a href="index.php" class="btn btn-info w-20">
           <i class="fas fa-arrow-left"></i>
@@ -144,50 +142,55 @@ $data = $koneksi->query("SELECT * FROM inventaris $where ORDER BY waktu DESC LIM
     </form>
 
     <!-- Daftar Barangnya -->
-    <div class="card">
-      <div class="card-header text-center font-weight-bold">Daftar Inventaris Barang</div>
-      <div class="card-body">
-        <div class="table-responsive">
-          <table class="table table-bordered table-striped ">
-            <thead class="table-secondary">
-              <tr>
-                <th>No</th>
-                <th>Nama</th>
-                <th>Kategori</th>
-                <th>Jumlah</th>
-                <th>Lokasi</th>
-                <th>Gambar</th>
-                <th>Aksi</th>
-              </tr>
-            </thead>
-            <tbody>
-              <?php if ($data->num_rows > 0): ?>
-                <?php while ($row = $data->fetch_assoc()): ?>
-                  <tr>
-                    <td><?= $no++; ?></td>
-                    <td><?= htmlspecialchars($row['nama']) ?></td>
-                    <td><?= htmlspecialchars($row['kategori']) ?></td>
-                    <td><?= htmlspecialchars($row['jumlah']) ?></td>
-                    <td><?= nl2br(htmlspecialchars($row['lokasi'])) ?></td>
-                    <td><img src="img/<?= !empty($row['gambar']) ? ($row['gambar']) : 'default.jpg' ?>" alt="Foto Profil" style="height:100px;" loading="lazy" class="rounded-3"></td>
-
-                    <td>
-                      <a href="edit.php?id=<?= $row['id'] ?>" class="btn btn-sm btn-warning">
-                        <i class="fas fa-edit"></i>
-                      </a>
-                      <a href="hapus.php?hapus=<?= $row['id'] ?>" onclick="return confirm('Yakin hapus?')" class="btn btn-sm btn-danger">
-                        <i class="fas fa-trash"></i>
-                      </a>
-                    </td>
-                  </tr>
-                <?php endwhile; ?>
-              <?php else: ?>
+    <div class="container">
+      <div class="card">
+        <div class="card-header text-center font-weight-bold">Daftar Inventaris Barang</div>
+        <div class="card-body">
+          <div class="table-responsive">
+            <table class="table table-bordered table-striped ">
+              <thead class="table-secondary">
                 <tr>
-                  <td colspan="7" class="text-center text-muted">Data tidak ditemukan.</td>
+                  <th>No</th>
+                  <th>Nama</th>
+                  <th>Kategori</th>
+                  <th>Jumlah</th>
+                  <th>Lokasi</th>
+                  <th>Waktu</th>
+                  <th>Gambar</th>
+                  <th>Aksi</th>
                 </tr>
-              <?php endif; ?>
-            </tbody>
-          </table>
+              </thead>
+              <tbody id="dataTable">
+                <?php if ($data->num_rows > 0): ?>
+                  <?php while ($row = $data->fetch_assoc()): ?>
+                    <tr>
+                      <td><?= $no++; ?></td>
+                      <td><?= htmlspecialchars($row['nama']) ?></td>
+                      <td><?= htmlspecialchars($row['kategori']) ?></td>
+                      <td><?= htmlspecialchars($row['jumlah']) ?></td>
+                      <td><?= nl2br(htmlspecialchars($row['lokasi'])) ?></td>
+                      <td><?= nl2br(htmlspecialchars($row['waktu'])) ?></td>
+                      <td><img src="img/<?= !empty($row['gambar']) ? ($row['gambar']) : 'default.jpg' ?>" alt="Foto Profil" style="height:100px;" loading="lazy" class="rounded-3"></td>
+
+                      <td>
+                        <a href="edit.php?id=<?= $row['id'] ?>" class="btn btn-sm btn-warning">
+                          <i class="fas fa-edit"></i>
+                        </a>
+                        <a href="hapus.php?hapus=<?= $row['id'] ?>" onclick="return confirm('Yakin hapus?')" class="btn btn-sm btn-danger">
+                          <i class="fas fa-trash"></i>
+                        </a>
+                      </td>
+                    </tr>
+                  <?php endwhile; ?>
+                <?php else: ?>
+                  <tr>
+                    <td colspan="7" class="text-center text-muted">Data tidak ditemukan.</td>
+                  </tr>
+                <?php endif; ?>
+              </tbody>
+            </table>
+
+          </div>
 
           <!-- Pagination -->
           <?php if ($total_pages > 1): ?>
@@ -217,8 +220,8 @@ $data = $koneksi->query("SELECT * FROM inventaris $where ORDER BY waktu DESC LIM
                 // Halaman tengah (sekitar halaman aktif)
                 for ($i = $start; $i <= $end; $i++) {
                   echo '<li class="page-item ' . ($i == $page ? 'active' : '') . '">
-                <a class="page-link" href="?page=' . $i . (!empty($keyword) ? '&keyword=' . urlencode($keyword) : '') . '">' . $i . '</a>
-              </li>';
+                        <a class="page-link" href="?page=' . $i . (!empty($keyword) ? '&keyword=' . urlencode($keyword) : '') . '">' . $i . '</a>
+                      </li>';
                 }
 
                 // Halaman terakhir
@@ -240,7 +243,6 @@ $data = $koneksi->query("SELECT * FROM inventaris $where ORDER BY waktu DESC LIM
               </ul>
             </nav>
           <?php endif; ?>
-
         </div>
       </div>
     </div>
@@ -354,6 +356,7 @@ $data = $koneksi->query("SELECT * FROM inventaris $where ORDER BY waktu DESC LIM
     </script>
     <script src="https://kit.fontawesome.com/c8f4e6dde8.js" crossorigin="anonymous"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/js/bootstrap.bundle.min.js" integrity="sha384-ndDqU0Gzau9qJ1lfW4pNLlhNTkCfHzAVBReH9diLvGRem5+R9g2FzA8ZGN954O5Q" crossorigin="anonymous"></script>
+    <script src="script/script.js"></script>
 </body>
 
 </html>
