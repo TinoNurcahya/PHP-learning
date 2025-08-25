@@ -1,5 +1,5 @@
 //* semua kode PHP harus berada dalam tag <?php ?>
-//* <?= ?> untuk panggilan di html
+//* <?= ?> untuk panggilan di html (echo)
 //* VARIABEL GLOBAL
 $_GET	      Menangkap data dari URL (query string)
 $_POST	    Menangkap data dari form dengan metode POST
