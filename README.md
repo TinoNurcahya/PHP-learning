@@ -17,4 +17,4 @@ Materi mencakup dasar-dasar hingga implementasi CRUD dengan database, session & 
 ---
 ## 🔗 Link Website
 
-[crud-ajax.infinityfreeapp.com]
+[https://crud-ajax.infinityfreeapp.com/]
